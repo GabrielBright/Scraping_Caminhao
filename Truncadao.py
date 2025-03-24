@@ -39,7 +39,7 @@ async def extracaoDadosTrucadao(pagina, max_retries=3):
     links = []
     try:
         botoes = pagina.locator('xpath=//*[@id="__next"]/div[3]/div/div[2]//button')
-        await pagina.wait_for_selector('xpath=//*[@id="__next"]/div[3]/div/div[2]//button', timeout=30000)
+        await pagina.wait_for_selector('xpath=//*[@id="__next"]/div[3]/div/div[2]//button', timeout=50000)
         total_botoes = await botoes.count()
         print(f"Encontrados {total_botoes} botões na página.")
         
@@ -54,8 +54,8 @@ async def extracaoDadosTrucadao(pagina, max_retries=3):
             for attempt in range(max_retries):
                 try:
                     await botao_atual.scroll_into_view_if_needed()
-                    await botao_atual.click(timeout=30000)
-                    await pagina.wait_for_load_state('networkidle', timeout=30000)
+                    await botao_atual.click(timeout=50000)
+                    await pagina.wait_for_load_state('networkidle', timeout=50000)
 
                     preco_selector = '//*[@id="__next"]/div[2]/div/div[1]/div/div/h5[2]'
                     await pagina.wait_for_selector(preco_selector, timeout=60000)
@@ -74,7 +74,7 @@ async def extracaoDadosTrucadao(pagina, max_retries=3):
 
             try:
                 info_selector = '.MuiGrid-root.MuiGrid-container.css-3uuuu9'
-                await pagina.wait_for_selector(info_selector, timeout=30000)
+                await pagina.wait_for_selector(info_selector, timeout=50000)
                 informacoes_tcn = await pagina.locator(info_selector).inner_text()
                 dados_tecnicos = await extrair_informacoes_tecnicas(informacoes_tcn)
             except Exception as e:
@@ -82,7 +82,7 @@ async def extracaoDadosTrucadao(pagina, max_retries=3):
 
             try:
                 revenda_selector = '//*[@id="__next"]/div[2]/div/div[2]/div[2]/div[1]/span/p'
-                await pagina.wait_for_selector(revenda_selector, timeout=30000)
+                await pagina.wait_for_selector(revenda_selector, timeout=50000)
                 informacoes_rv = await pagina.locator(revenda_selector).inner_text()
             except Exception as e:
                 print(f"Erro ao extrair Informações Revenda: {e}")
@@ -95,7 +95,7 @@ async def extracaoDadosTrucadao(pagina, max_retries=3):
             })
 
             await pagina.go_back()
-            await pagina.wait_for_load_state('networkidle', timeout=30000)
+            await pagina.wait_for_load_state('networkidle', timeout=50000)
 
     except Exception as e:
         print(f"Erro geral ao extrair dados: {e}")
@@ -120,7 +120,7 @@ async def coletar_dados_trucadao(pagina):
             if await proxima_pagina.is_visible() and await proxima_pagina.is_enabled():
                 print(f"Indo para a página {pagina_atual + 1}...")
                 await proxima_pagina.click()
-                await pagina.wait_for_load_state('networkidle', timeout=30000)
+                await pagina.wait_for_load_state('networkidle', timeout=50000)
                 pagina_atual += 1
             else:
                 print("Botão da próxima página não está clicável. Encerrando.")

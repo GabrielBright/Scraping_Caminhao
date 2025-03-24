@@ -164,8 +164,8 @@ dados_seminovos = coletar_dados(url_seminovos, xpath_seminovos, seletor_proxima_
 df_caminhoes = pd.DataFrame(dados_caminhoes)
 df_seminovos = pd.DataFrame(dados_seminovos)
 
-with pd.ExcelWriter('dados_queroTruck_grupoVamos.xlsx') as writer:
+with pd.ExcelWriter('dados_Truck&Vamos.xlsx') as writer:
     df_caminhoes.to_excel(writer, sheet_name='QueroTruck', index=False)
     df_seminovos.to_excel(writer, sheet_name='GrupoVamos', index=False)
 
-print("Dados exportados para 'dados_queroTruck_grupoVamos.xlsx' com abas separadas")
+print("Dados exportados para 'dados_Truck&Vamos.xlsx' com abas separadas")
