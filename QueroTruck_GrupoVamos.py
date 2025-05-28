@@ -25,43 +25,43 @@ def extracaoDados(pagina, xpath, site):
     return dados_extraidos
 
 def separar_informacoes_querotruck(informacoes):
-    dados = {}
+    dados = {
+        "Marca": "Não informado",
+        "Modelo": "Não informado",
+        "Preço": "Não informado",
+        "Quilometragem": "Não informado",
+        "Ano": "Não informado",
+        "Anunciante": "Não informado",
+        "Localização": "Não informado"
+    }
 
     try:
-        informacoes_lista = [info.strip() for info in informacoes.split('\n') if info.strip()]
-        
-        if len(informacoes_lista) >= 4:
+        linhas = [linha.strip() for linha in informacoes.split('\n') if linha.strip()]
 
-            marca_modelo = informacoes_lista[0].split(" ", 1) 
-            if len(marca_modelo) >= 2:
-                dados["Marca"] = marca_modelo[0]  
-                dados["Modelo"] = marca_modelo[1] 
-            else:
-                dados["Marca"] = marca_modelo[0]  
-                dados["Modelo"] = "Não informado" 
+        if len(linhas) >= 2:
+            # Primeira linha: Marca e Modelo
+            marca_modelo = linhas[0].split(" ", 1)
+            dados["Marca"] = marca_modelo[0]
+            dados["Modelo"] = marca_modelo[1] if len(marca_modelo) > 1 else "Não informado"
 
-            dados["Preço"] = informacoes_lista[1]
+            # Segunda linha: Preço
+            dados["Preço"] = linhas[1] if "R$" in linhas[1] else "Não informado"
 
-            odometro = re.search(r"ODÔMETRO\s*(\d[\d\.]*)", informacoes)
-            dados["Quilometragem"] = odometro.group(1) if odometro else "Não informado"
-            
-            ano = re.search(r"ANO\s*(\d{4})", informacoes)
-            dados["Ano"] = ano.group(1) if ano else "Não informado"
-            
-            anunciante = re.search(r"ANUNCIANTE\s*(.*)", informacoes)
-            dados["Anunciante"] = anunciante.group(1) if anunciante else "Não informado"
-            
-            localizacao = re.search(r"([A-Za-zá-úA-Ú\s]+-\s?[A-Za-zá-úA-Ú\s]+)", informacoes)
-            dados["Localização"] = localizacao.group(1) if localizacao else "Não informado"
-              
-        else:
-            dados["Marca"] = "Não informado"
-            dados["Modelo"] = "Não informado"
-            dados["Preço"] = "Não informado"
-            dados["Quilometragem"] = "Não informado"
-            dados["Ano"] = "Não informado"
-            dados["Anunciante"] = "Não informado"
-            dados["Localização"] = "Não informado"
+        for i, linha in enumerate(linhas):
+            if "ODÔMETRO" in linha.upper() and i + 1 < len(linhas):
+                km = re.search(r"([\d\.]+)", linhas[i + 1])
+                dados["Quilometragem"] = km.group(1).replace('.', '') + " km" if km else "Não informado"
+
+            elif "ANO" in linha.upper() and i + 1 < len(linhas):
+                ano = re.search(r"\d{4}(?:/\d{4})?", linhas[i + 1])
+                dados["Ano"] = ano.group(0) if ano else "Não informado"
+
+            elif "ANUNCIANTE" in linha.upper() and i + 1 < len(linhas):
+                dados["Anunciante"] = linhas[i + 1].strip()
+
+            elif "-" in linha and re.search(r"[A-Z]{2}$", linha.strip()):
+                dados["Localização"] = linha.strip()
+
     except Exception as e:
         print(f"Erro ao separar informações do QueroTruck: {e}")
         dados = {
@@ -77,34 +77,37 @@ def separar_informacoes_querotruck(informacoes):
     return dados
 
 def separar_informacoes_grupovamos(informacoes):
-    dados = {}
+    dados = {
+        "Modelo": "Não informado",
+        "Marca": "Não informado",
+        "Localização": "Não informado",
+        "Quilometragem": "Não informado",
+        "Ano": "Não informado",
+        "Preço": "Não informado",
+        "Anunciante": "Não informado"  # mantido para compatibilidade, mas sempre "Não informado"
+    }
 
     try:
-        informacoes_lista = [info.strip() for info in informacoes.split('\n') if info.strip()]
+        linhas = [linha.strip() for linha in informacoes.split('\n') if linha.strip()]
 
-        if len(informacoes_lista) >= 6:
-            dados["Modelo"] = informacoes_lista[0]
-            dados["Marca"] = informacoes_lista[1]
-            dados["Localização"] = informacoes_lista[2]
-            dados["Quilometragem"] = informacoes_lista[3] if len(informacoes_lista) > 3 else "Não informado" 
-            dados["Ano"] = informacoes_lista[4] if len(informacoes_lista) > 4 else "Não informado"  
-            dados["Preço"] = informacoes_lista[5] if len(informacoes_lista) > 5 else "Não informado"
-        else:
-            dados["Modelo"] = "Não informado"
-            dados["Marca"] = "Não informado"
-            dados["Localização"] = "Não informado"
-            dados["Quilometragem"] = "Não informado"
-            dados["Ano"] = "Não informado"
-            dados["Preço"] = "Não informado"
+        if len(linhas) >= 6:
+            dados["Modelo"] = linhas[0]
+            dados["Marca"] = linhas[1]
+            dados["Localização"] = linhas[2]
+            dados["Quilometragem"] = linhas[3]
+            dados["Ano"] = linhas[4]
+            dados["Preço"] = linhas[5]
+
     except Exception as e:
         print(f"Erro ao separar informações do Grupo Vamos: {e}")
         dados = {
-            "Marca": "Erro",
             "Modelo": "Erro",
-            "Preço": "Erro",
+            "Marca": "Erro",
+            "Localização": "Erro",
             "Quilometragem": "Erro",
             "Ano": "Erro",
-            "Localização": "Erro",
+            "Preço": "Erro",
+            "Anunciante": "Erro"
         }
 
     return dados
