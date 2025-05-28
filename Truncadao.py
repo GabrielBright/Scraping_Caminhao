@@ -162,7 +162,7 @@ async def coletar_dados_trucadao(pagina, config: Config = Config()) -> List[Dict
 async def iniciar_scraping():
     async with async_playwright() as p:
         try:
-            navegador = await p.chromium.launch(headless=True)
+            navegador = await p.chromium.launch()
             pagina = await navegador.new_page()
             config = Config()
             

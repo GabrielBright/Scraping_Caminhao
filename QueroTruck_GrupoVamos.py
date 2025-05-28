@@ -42,13 +42,13 @@ def separar_informacoes_querotruck(informacoes):
 
             dados["Preço"] = informacoes_lista[1]
 
-            odometro = re.search(r"Odômetro\s*(\d[\d\.]*)", informacoes)
+            odometro = re.search(r"ODÔMETRO\s*(\d[\d\.]*)", informacoes)
             dados["Quilometragem"] = odometro.group(1) if odometro else "Não informado"
             
-            ano = re.search(r"Ano\s*(\d{4})", informacoes)
+            ano = re.search(r"ANO\s*(\d{4})", informacoes)
             dados["Ano"] = ano.group(1) if ano else "Não informado"
             
-            anunciante = re.search(r"Anunciante\s*(.*)", informacoes)
+            anunciante = re.search(r"ANUNCIANTE\s*(.*)", informacoes)
             dados["Anunciante"] = anunciante.group(1) if anunciante else "Não informado"
             
             localizacao = re.search(r"([A-Za-zá-úA-Ú\s]+-\s?[A-Za-zá-úA-Ú\s]+)", informacoes)
@@ -113,20 +113,20 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
     with sync_playwright() as p:
         navegador = p.chromium.launch()
         pagina = navegador.new_page()
-        pagina.goto(url, timeout=120000)
-        pagina.wait_for_load_state('load', timeout=120000)
+        pagina.goto(url, timeout=220000)
+        pagina.wait_for_load_state('load', timeout=220000)
 
         todos_os_dados = []
 
         while True:
             print("Coletando dados da página...")
-            pagina.wait_for_selector(xpath, timeout=120000)
+            pagina.wait_for_selector(xpath, timeout=220000)
             dados_atual = extracaoDados(pagina, xpath, site)
             todos_os_dados.extend(dados_atual)
             time.sleep(5)
 
             try:
-                pagina.wait_for_selector(seletor_proxima_pagina, timeout=120000)
+                pagina.wait_for_selector(seletor_proxima_pagina, timeout=220000)
                 proxima_pagina = pagina.locator(seletor_proxima_pagina)
 
                 if proxima_pagina.count() > 0 and proxima_pagina.is_visible():
@@ -151,11 +151,11 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
         return todos_os_dados
 
 url_caminhoes = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=CAVALO%2520MEC%25C3%2582NICO&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
-xpath_caminhoes = "//app-truck-card/a/a"
+xpath_caminhoes = "//app-truck-card/a/a"#/html/body/app-root/div/app-list-advertisements/app-page-list-ads/main/div/div/div[3]/div[2]/div[1]/app-truck-card[1]/a/a
 seletor_proxima_pagina_caminhoes = '//button[contains(@class, "p-paginator-next")]'
 
 url_seminovos = "https://vamos.com.br/seminovos/cavalo-mecanico"
-xpath_seminovos = "//app-offer-card/div/a"
+xpath_seminovos = "//app-offer-card/div/a"#/html/body/app-root/app-seminovos-busca/app-block-filtro-veiculos/form/div[2]/div[2]/div[1]/app-offer-card[1]/div/a
 seletor_proxima_pagina_seminovos = 'xpath=//*[@id="paginador"]/pagination-template/nav/ul/li[13]/a'
 
 dados_caminhoes = coletar_dados(url_caminhoes, xpath_caminhoes, seletor_proxima_pagina_caminhoes, site="querotruck")
