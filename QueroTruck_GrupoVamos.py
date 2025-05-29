@@ -84,20 +84,28 @@ def separar_informacoes_grupovamos(informacoes):
         "Quilometragem": "Não informado",
         "Ano": "Não informado",
         "Preço": "Não informado",
-        "Anunciante": "Não informado"  # mantido para compatibilidade, mas sempre "Não informado"
+        "Anunciante": "Não informado"
     }
 
     try:
         linhas = [linha.strip() for linha in informacoes.split('\n') if linha.strip()]
 
-        if len(linhas) >= 6:
-            dados["Modelo"] = linhas[0]
-            dados["Marca"] = linhas[1]
-            dados["Localização"] = linhas[2]
-            dados["Quilometragem"] = linhas[3]
-            dados["Ano"] = linhas[4]
-            dados["Preço"] = linhas[5]
+        # Garantir que todas as 6 linhas estão presentes e válidas
+        if len(linhas) == 6:
+            modelo, marca, local, km, ano, preco = linhas
 
+            if any(campo.lower() in ["não informado", ""] for campo in linhas):
+                return dados  # ignora entrada inválida
+
+            dados.update({
+                "Modelo": modelo,
+                "Marca": marca,
+                "Localização": local,
+                "Quilometragem": km,
+                "Ano": ano,
+                "Preço": preco,
+                "Anunciante": "Não informado"
+            })
     except Exception as e:
         print(f"Erro ao separar informações do Grupo Vamos: {e}")
         dados = {
@@ -154,11 +162,11 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
         return todos_os_dados
 
 url_caminhoes = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=CAVALO%2520MEC%25C3%2582NICO&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
-xpath_caminhoes = "//app-truck-card/a/a"#/html/body/app-root/div/app-list-advertisements/app-page-list-ads/main/div/div/div[3]/div[2]/div[1]/app-truck-card[1]/a/a
+xpath_caminhoes = "//app-truck-card/a/a"
 seletor_proxima_pagina_caminhoes = '//button[contains(@class, "p-paginator-next")]'
 
 url_seminovos = "https://vamos.com.br/seminovos/cavalo-mecanico"
-xpath_seminovos = "//app-offer-card/div/a"#/html/body/app-root/app-seminovos-busca/app-block-filtro-veiculos/form/div[2]/div[2]/div[1]/app-offer-card[1]/div/a
+xpath_seminovos = "//app-offer-card/div/a"
 seletor_proxima_pagina_seminovos = 'xpath=//*[@id="paginador"]/pagination-template/nav/ul/li[13]/a'
 
 dados_caminhoes = coletar_dados(url_caminhoes, xpath_caminhoes, seletor_proxima_pagina_caminhoes, site="querotruck")
