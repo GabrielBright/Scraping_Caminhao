@@ -72,9 +72,13 @@ async def tentar_extrair_preco(pagina, config: Config) -> str:
 
     # Limpeza e formatação
     try:
-        preco_limpo = preco_raw.strip().replace("R$", "").replace(".", "").replace(",", ".")
+        preco_limpo = preco_raw.replace("R$", "").replace("\xa0", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
         if preco_limpo.replace('.', '').isdigit():
-            return f"R$ {float(preco_limpo):,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
+            preco_formatado = f"R$ {float(preco_limpo):,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
+            logger.info(f"💰 Preço extraído: {preco_formatado}")
+            return preco_formatado
+        else:
+            logger.warning(f"⚠️ Preço não numérico após limpeza: {preco_limpo}")
     except Exception as e:
         logger.error(f"❌ Erro ao formatar preço: {e}")
 
