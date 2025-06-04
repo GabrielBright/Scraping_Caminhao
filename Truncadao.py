@@ -96,10 +96,15 @@ async def tentar_extrair_dados_tecnicos(pagina, config: Config) -> Dict[str, str
 
 async def tentar_extrair_revenda(pagina, config: Config) -> str:
     try:
-        selector = "xpath=//*[@id='__next']/div[2]/div/div[2]/div[2]/div[1]/span"
-        await pagina.wait_for_selector(selector, timeout=config.TIMEOUT_PADRAO)
-        raw_text = await pagina.locator(selector).inner_text()
-        revenda_text = raw_text.replace("CIDADE:", "").strip().title()
+        selector = "span.city"
+        el = pagina.locator(selector)
+
+        await el.scroll_into_view_if_needed()
+        await el.wait_for(state="visible", timeout=15000)  # timeout menor evita travar o script
+
+        raw_text = await el.inner_text()
+        revenda_text = raw_text.replace("Cidade:", "").strip().title()
+
         logger.info(f"🏪 Localização da revenda: {revenda_text}")
         return revenda_text
     except Exception as e:
