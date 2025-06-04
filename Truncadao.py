@@ -32,11 +32,22 @@ async def extrair_informacoes_tecnicas(texto: str) -> Dict[str, str]:
     i = 0
     while i < len(linhas):
         linha = linhas[i].lower()
+
+        # Detecta Situação seguida de "Km" e valor
+        if linha in ["usado", "semi-novo", "novo"]:
+            campos["Situação"] = linha.upper()
+            if i + 2 < len(linhas) and linhas[i + 1].lower() == "km":
+                km_valor = linhas[i + 2].replace(".", "").replace(",", "").strip()
+                if km_valor.isdigit():
+                    campos["Quilometragem"] = f"{int(km_valor):,} km".replace(",", ".")
+            i += 1
+
         for campo in campos.keys():
-            if campo.lower() in linha:
+            if campo.lower() in linha and campo not in ["Situação", "Quilometragem"]:
                 if i + 1 < len(linhas):
                     campos[campo] = linhas[i + 1].strip()
                 break
+
         i += 1
 
     return campos
