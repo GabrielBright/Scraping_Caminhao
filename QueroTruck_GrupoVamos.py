@@ -124,20 +124,20 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
     with sync_playwright() as p:
         navegador = p.chromium.launch()
         pagina = navegador.new_page()
-        pagina.goto(url, timeout=220000)
-        pagina.wait_for_load_state('load', timeout=220000)
+        pagina.goto(url, timeout=320000)
+        pagina.wait_for_load_state('load', timeout=320000)
 
         todos_os_dados = []
 
         while True:
             print("Coletando dados da página...")
-            pagina.wait_for_selector(xpath, timeout=220000)
+            pagina.wait_for_selector(xpath, timeout=320000)
             dados_atual = extracaoDados(pagina, xpath, site)
             todos_os_dados.extend(dados_atual)
             time.sleep(5)
 
             try:
-                pagina.wait_for_selector(seletor_proxima_pagina, timeout=220000)
+                pagina.wait_for_selector(seletor_proxima_pagina, timeout=320000)
                 proxima_pagina = pagina.locator(seletor_proxima_pagina)
 
                 if proxima_pagina.count() > 0 and proxima_pagina.is_visible():
