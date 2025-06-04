@@ -17,7 +17,7 @@ class Config:
     OUTPUT_FILE = 'dados_trucadao_completos.xlsx'
 
 async def extrair_informacoes_tecnicas(texto: str) -> Dict[str, str]:
-    dados = {
+    campos = {
         "Tipo": "Não informado",
         "Marca": "Não informado",
         "Modelo": "Não informado",
@@ -27,16 +27,19 @@ async def extrair_informacoes_tecnicas(texto: str) -> Dict[str, str]:
         "Combustível": "Não informado",
         "Cor": "Não informado"
     }
-    try:
-        for campo in dados.keys():
-            padrao = rf"{campo}[:\s]*([\w\s\-.]+)"
-            match = re.search(padrao, texto, re.IGNORECASE)
-            if match:
-                dados[campo] = match.group(1).strip()
-    except Exception as e:
-        logger.error(f"Erro ao processar informações técnicas: {e}")
-        return {k: "Erro" for k in dados.keys()}
-    return dados
+
+    linhas = [l.strip() for l in texto.split('\n') if l.strip()]
+    i = 0
+    while i < len(linhas):
+        linha = linhas[i].lower()
+        for campo in campos.keys():
+            if campo.lower() in linha:
+                if i + 1 < len(linhas):
+                    campos[campo] = linhas[i + 1].strip()
+                break
+        i += 1
+
+    return campos
 
 async def tentar_extrair_preco(pagina, config: Config) -> str:
     # Tenta primeiro com seletor direto
