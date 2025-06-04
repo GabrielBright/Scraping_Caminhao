@@ -114,7 +114,7 @@ async def tentar_extrair_revenda(pagina, config: Config) -> str:
         el = pagina.locator(selector)
 
         await el.scroll_into_view_if_needed()
-        await el.wait_for(state="visible", timeout=15000)  # timeout menor evita travar o script
+        await el.wait_for(state="visible", timeout=35000)  # timeout menor evita travar o script
 
         raw_text = await el.inner_text()
         revenda_text = raw_text.replace("Cidade:", "").strip().title()
@@ -139,7 +139,7 @@ async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
 
             try:
                 await botao.scroll_into_view_if_needed()
-                await botao.wait_for(state="attached", timeout=5000)
+                await botao.wait_for(state="attached", timeout=35000)
                 await botao.hover()
                 await asyncio.sleep(0.5)
                 await botao.click(timeout=config.TIMEOUT_PADRAO)
@@ -192,14 +192,21 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
         todos_dados.extend(dados)
 
         try:
-            proximo_botao = pagina.locator("ul.MuiPagination-ul li:has(a[aria-label='Go to next page']) a")
-            await proximo_botao.wait_for(state="visible", timeout=10000)
+            proximo_botao = pagina.locator("button[aria-label='Go to next page']")
+            await proximo_botao.wait_for(state="attached", timeout=30000)
+
             if await proximo_botao.is_enabled():
+                await proximo_botao.scroll_into_view_if_needed()
+                await asyncio.sleep(0.5)
                 await proximo_botao.click()
-                await pagina.wait_for_load_state("networkidle")
+                logger.info("🔄 Clique realizado, aguardando próxima página...")
+
+                # Aguarda botão de anúncio reaparecer na nova página
+                await pagina.wait_for_selector('button.button', timeout=60000)
                 pagina_atual += 1
+                logger.info(f"➡️ Avançou para a página {pagina_atual}")
             else:
-                logger.info("⛔ Botão de próxima página indisponível.")
+                logger.info("⛔ Botão de próxima página desabilitado.")
                 break
         except Exception as e:
             logger.warning(f"⚠️ Falha ao mudar de página: {e}")
