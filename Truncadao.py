@@ -148,8 +148,14 @@ async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
                 logger.warning(f"❌ Falha ao clicar no botão {i + 1}: {e}")
                 continue
 
-            await pagina.wait_for_load_state("networkidle")
-            await asyncio.sleep(2.0)
+            try:
+                await pagina.wait_for_load_state("networkidle", timeout=30000)
+                await asyncio.sleep(2.0)
+            except PlaywrightTimeoutError:
+                logger.warning(f"⏱️ Timeout ao carregar anúncio {i + 1}, pulando para o próximo.")
+                await pagina.go_back(timeout=config.TIMEOUT_PADRAO)
+                await pagina.wait_for_selector('button.button', timeout=config.TIMEOUT_PADRAO)
+                continue
 
             preco = await tentar_extrair_preco(pagina, config)
             logger.info(f"💰 Preço extraído: {preco}")
@@ -193,15 +199,13 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
 
         try:
             proximo_botao = pagina.locator("button[aria-label='Go to next page']")
-            await proximo_botao.wait_for(state="attached", timeout=60000)
+            await proximo_botao.scroll_into_view_if_needed()
+            await proximo_botao.wait_for(state="visible", timeout=15000)
 
             if await proximo_botao.is_enabled():
-                await proximo_botao.scroll_into_view_if_needed()
                 await asyncio.sleep(0.5)
                 await proximo_botao.click()
                 logger.info("🔄 Clique realizado, aguardando próxima página...")
-
-                # Aguarda botão de anúncio reaparecer na nova página
                 await pagina.wait_for_selector('button.button', timeout=60000)
                 pagina_atual += 1
                 logger.info(f"➡️ Avançou para a página {pagina_atual}")
