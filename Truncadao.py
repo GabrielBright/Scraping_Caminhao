@@ -39,33 +39,45 @@ async def extrair_informacoes_tecnicas(texto: str) -> Dict[str, str]:
     return dados
 
 async def tentar_extrair_preco(pagina, config: Config) -> str:
-    try:
-        container_selector = "div.MuiBox-root.css-1fab1ua"
-        preco_element = pagina.locator(f"{container_selector} h5.price")
-        await preco_element.wait_for(state="visible", timeout=config.TIMEOUT_PADRAO)
-        preco_texto = await preco_element.inner_text()
-        logger.info(f"💰 Preço visível: {preco_texto}")
-    except Exception:
-        logger.warning("⚠️ Fallback para evaluate_handle()")
-        preco_handle = await pagina.evaluate_handle("""() => {
-            const div = document.querySelector('div.MuiBox-root.css-1fab1ua');
-            if (!div) return null;
-            const h5 = div.querySelector('h5.price');
-            return h5 ? h5.innerText : null;
-        }""")
-        preco_texto = await preco_handle.json_value()
-        if preco_texto:
-            logger.info(f"✅ Preço via evaluate: {preco_texto}")
-        else:
-            logger.error("❌ Nenhum preço encontrado via evaluate.")
-            return "Não informado"
+    # Tenta primeiro com seletor direto
+    preco_selectors = [
+        "h5.price",
+        "h5.MuiTypography-root.MuiTypography-h5.price",  # alternativa exata do HTML
+        "h5:has-text('R$')"  # fallback textual
+    ]
 
+    for selector in preco_selectors:
+        try:
+            logger.info(f"🔍 Tentando localizar preço com seletor: {selector}")
+            await pagina.wait_for_selector(selector, timeout=config.TIMEOUT_PADRAO)
+            preco_raw = await pagina.locator(selector).inner_text()
+            if preco_raw:
+                logger.info(f"💰 Preço encontrado via seletor: {preco_raw}")
+                break
+        except Exception:
+            continue
+    else:
+        # Fallback via JavaScript DOM direto
+        logger.warning("⚠️ Nenhum seletor funcionou, tentando via JavaScript direto")
+        preco_raw = await pagina.evaluate("""
+            () => {
+                const el = document.querySelector('h5.price');
+                return el ? el.innerText : null;
+            }
+        """)
+        if not preco_raw:
+            logger.error("❌ Preço não encontrado nem com fallback")
+            return "Não informado"
+        logger.info(f"✅ Preço via evaluate: {preco_raw}")
+
+    # Limpeza e formatação
     try:
-        preco_limpo = preco_texto.strip().replace("R$", "").replace(".", "").replace(",", ".")
+        preco_limpo = preco_raw.strip().replace("R$", "").replace(".", "").replace(",", ".")
         if preco_limpo.replace('.', '').isdigit():
             return f"R$ {float(preco_limpo):,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
     except Exception as e:
         logger.error(f"❌ Erro ao formatar preço: {e}")
+
     return "Não informado"
 
 async def tentar_extrair_dados_tecnicos(pagina, config: Config) -> Dict[str, str]:
@@ -172,7 +184,7 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
 async def iniciar_scraping():
     async with async_playwright() as p:
         try:
-            navegador = await p.chromium.launch(headless=False, slow_mo=100)
+            navegador = await p.chromium.launch(headless=True, slow_mo=100)
             pagina = await navegador.new_page()
             config = Config()
 
