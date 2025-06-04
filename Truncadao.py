@@ -193,7 +193,7 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
 
         try:
             proximo_botao = pagina.locator("button[aria-label='Go to next page']")
-            await proximo_botao.wait_for(state="attached", timeout=30000)
+            await proximo_botao.wait_for(state="attached", timeout=60000)
 
             if await proximo_botao.is_enabled():
                 await proximo_botao.scroll_into_view_if_needed()
@@ -222,7 +222,7 @@ async def iniciar_scraping():
             config = Config()
 
             logger.info(f"🌐 Acessando {config.URL_BASE}")
-            await pagina.goto(config.URL_BASE, timeout=60000)
+            await pagina.goto(config.URL_BASE, timeout=80000)
             await pagina.wait_for_load_state("networkidle")
 
             dados = await coletar_dados_trucadao(pagina, config)
