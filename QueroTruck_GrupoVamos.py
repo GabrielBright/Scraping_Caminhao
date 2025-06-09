@@ -137,7 +137,9 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
             time.sleep(5)
 
             try:
-                pagina.wait_for_selector(seletor_proxima_pagina, timeout=10000)
+                # Timeout diferente para cada site (mais seguro para a Vamos)
+                timeout_proxima_pagina = 10000 if site == "querotruck" else 30000
+                pagina.wait_for_selector(seletor_proxima_pagina, timeout=timeout_proxima_pagina)
                 proxima_pagina = pagina.locator(seletor_proxima_pagina)
 
                 if proxima_pagina.count() > 0 and proxima_pagina.is_visible():
@@ -145,13 +147,21 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
                     classe_botao = proxima_pagina.get_attribute("class")
 
                     if not desativado and (classe_botao is None or "p-disabled" not in classe_botao):
-                        print("Indo para a próxima página...")
-                        proxima_pagina.scroll_into_view_if_needed()
-                        proxima_pagina.click()
+                        
+                        if site == "querotruck":
+                            print("Indo para a próxima página (QueroTruck)...")
+                            proxima_pagina.scroll_into_view_if_needed()
+                            proxima_pagina.click()
 
-                        # Espera robusta após o clique → espera os cards recarregarem
-                        pagina.wait_for_selector(xpath, timeout=30000)
-                        time.sleep(2)
+                            # Espera robusta após o clique → espera os cards recarregarem
+                            pagina.wait_for_selector(xpath, timeout=30000)
+                            time.sleep(2)
+                        else:  # grupo vamos
+                            print("Indo para a próxima página (GrupoVamos)...")
+                            proxima_pagina.click()
+                            pagina.wait_for_load_state('load', timeout=320000)
+                            time.sleep(2)
+                        
                     else:
                         print("Última página alcançada (botão desativado).")
                         break
