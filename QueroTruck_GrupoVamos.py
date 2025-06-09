@@ -137,7 +137,7 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
             time.sleep(5)
 
             try:
-                pagina.wait_for_selector(seletor_proxima_pagina, timeout=320000)
+                pagina.wait_for_selector(seletor_proxima_pagina, timeout=10000)
                 proxima_pagina = pagina.locator(seletor_proxima_pagina)
 
                 if proxima_pagina.count() > 0 and proxima_pagina.is_visible():
@@ -146,8 +146,11 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
 
                     if not desativado and (classe_botao is None or "p-disabled" not in classe_botao):
                         print("Indo para a próxima página...")
+                        proxima_pagina.scroll_into_view_if_needed()
                         proxima_pagina.click()
-                        pagina.wait_for_load_state('networkidle')
+
+                        # Espera robusta após o clique → espera os cards recarregarem
+                        pagina.wait_for_selector(xpath, timeout=30000)
                         time.sleep(2)
                     else:
                         print("Última página alcançada (botão desativado).")
@@ -163,7 +166,7 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
 
 url_caminhoes = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=CAVALO%2520MEC%25C3%2582NICO&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
 xpath_caminhoes = "//app-truck-card/a/a"
-seletor_proxima_pagina_caminhoes = '//button[contains(@class, "p-paginator-next")]'
+seletor_proxima_pagina_caminhoes = "button.p-paginator-next.p-paginator-element.p-link.p-ripple"
 
 url_seminovos = "https://vamos.com.br/seminovos/cavalo-mecanico"
 xpath_seminovos = "//app-offer-card/div/a"
