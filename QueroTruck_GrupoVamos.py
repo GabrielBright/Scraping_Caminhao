@@ -131,6 +131,10 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
 
         while True:
             print("Coletando dados da página...")
+            if site == "grupovamos":
+                pagina.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                time.sleep(3)
+
             pagina.wait_for_selector(xpath, timeout=320000)
             dados_atual = extracaoDados(pagina, xpath, site)
             todos_os_dados.extend(dados_atual)
@@ -147,7 +151,6 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
                     classe_botao = proxima_pagina.get_attribute("class")
 
                     if not desativado and (classe_botao is None or "p-disabled" not in classe_botao):
-
                         
                         if site == "querotruck":
                             print("Indo para a próxima página (QueroTruck)...")
