@@ -147,6 +147,7 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, site):
                     classe_botao = proxima_pagina.get_attribute("class")
 
                     if not desativado and (classe_botao is None or "p-disabled" not in classe_botao):
+
                         
                         if site == "querotruck":
                             print("Indo para a próxima página (QueroTruck)...")
