@@ -16,113 +16,85 @@ class Config:
     TIMEOUT_PADRAO = 60000
     OUTPUT_FILE = 'dados_trucadao_completos.xlsx'
 
-async def extrair_informacoes_tecnicas(texto: str) -> Dict[str, str]:
+async def tentar_extrair_dados_tecnicos(pagina, config: Config) -> Dict[str, str]:
     campos = {
-        "Tipo": "Não informado",
         "Marca": "Não informado",
         "Modelo": "Não informado",
         "Ano": "Não informado",
-        "Situação": "Não informado",
-        "Quilometragem": "Não informado",
         "Combustível": "Não informado",
-        "Cor": "Não informado"
+        "Quilometragem": "Não informado",
+        "Tipo": "Cavalo Mecânico",
+        "Situação": "Não informado"
     }
 
-    linhas = [l.strip() for l in texto.split('\n') if l.strip()]
-    i = 0
-    while i < len(linhas):
-        linha = linhas[i].lower()
+    try:
+        # Lista de campos que vamos procurar
+        labels_procurados = {
+            "Marca": "Marca",
+            "Modelo": "Modelo",
+            "Ano": "Ano",
+            "Combustível": "Combustivel",  
+            "Quilometragem": "Km",
+            "Situação": "Situação"
+        }
 
-        # Detecta Situação seguida de "Km" e valor
-        if linha in ["usado", "semi-novo", "novo"]:
-            campos["Situação"] = linha.upper()
-            if i + 2 < len(linhas) and linhas[i + 1].lower() == "km":
-                km_valor = linhas[i + 2].replace(".", "").replace(",", "").strip()
-                if km_valor.isdigit():
-                    campos["Quilometragem"] = f"{int(km_valor):,} km".replace(",", ".")
-            i += 1
+        # Seleciona todos os pares label + valor
+        blocos = pagina.locator("div.MuiGrid-item")
+        total_blocos = await blocos.count()
 
-        for campo in campos.keys():
-            if campo.lower() in linha and campo not in ["Situação", "Quilometragem"]:
-                if i + 1 < len(linhas):
-                    campos[campo] = linhas[i + 1].strip()
-                break
+        for i in range(total_blocos):
+            bloco = blocos.nth(i)
+            try:
+                await bloco.scroll_into_view_if_needed()
+                await asyncio.sleep(0.3)
+                
+                label = await bloco.locator("label").inner_text()
+                valor = await bloco.locator("p").inner_text()
 
-        i += 1
+                for campo, label_site in labels_procurados.items():
+                    if label.strip().lower() == label_site.lower():
+                        campos[campo] = valor.strip()
+            except Exception:
+                continue
+
+    except Exception as e:
+        logger.error(f"Erro ao extrair dados técnicos dinâmicos: {e}", exc_info=True)
+        for campo in campos:
+            if campos[campo] == "Não informado":
+                campos[campo] = "Erro"
 
     return campos
 
 async def tentar_extrair_preco(pagina, config: Config) -> str:
-    # Tenta primeiro com seletor direto
-    preco_selectors = [
-        "h5.price",
-        "h5.MuiTypography-root.MuiTypography-h5.price",  # alternativa exata do HTML
-        "h5:has-text('R$')"  # fallback textual
-    ]
-
-    for selector in preco_selectors:
-        try:
-            logger.info(f"🔍 Tentando localizar preço com seletor: {selector}")
-            await pagina.wait_for_selector(selector, timeout=config.TIMEOUT_PADRAO)
-            preco_raw = await pagina.locator(selector).inner_text()
-            if preco_raw:
-                logger.info(f"💰 Preço encontrado via seletor: {preco_raw}")
-                break
-        except Exception:
-            continue
-    else:
-        # Fallback via JavaScript DOM direto
-        logger.warning("⚠️ Nenhum seletor funcionou, tentando via JavaScript direto")
-        preco_raw = await pagina.evaluate("""
-            () => {
-                const el = document.querySelector('h5.price');
-                return el ? el.innerText : null;
-            }
-        """)
-        if not preco_raw:
-            logger.error("❌ Preço não encontrado nem com fallback")
-            return "Não informado"
-        logger.info(f"✅ Preço via evaluate: {preco_raw}")
+    try:
+        selector = "div.produtoVendedor h2"  
+        await pagina.wait_for_selector(selector, timeout=config.TIMEOUT_PADRAO)
+        preco_raw = await pagina.locator(selector).inner_text()
+        logger.info(f" Preço localizado: {preco_raw}")
+    except Exception as e:
+        logger.warning(f"Erro ao localizar o preço: {e}")
+        return "Não informado"
 
     # Limpeza e formatação
     try:
         preco_limpo = preco_raw.replace("R$", "").replace("\xa0", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
-        if preco_limpo.replace('.', '').isdigit():
-            preco_formatado = f"R$ {float(preco_limpo):,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
-            logger.info(f"💰 Preço extraído: {preco_formatado}")
-            return preco_formatado
-        else:
-            logger.warning(f"⚠️ Preço não numérico após limpeza: {preco_limpo}")
+        preco_float = float(preco_limpo)
+        preco_formatado = f"R$ {preco_float:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
+        return preco_formatado
     except Exception as e:
-        logger.error(f"❌ Erro ao formatar preço: {e}")
-
-    return "Não informado"
-
-async def tentar_extrair_dados_tecnicos(pagina, config: Config) -> Dict[str, str]:
-    try:
-        info_selector = "div[role='tabpanel']:has(div:has-text('Marca'))"
-        await pagina.wait_for_selector(info_selector, timeout=config.TIMEOUT_PADRAO)
-        informacoes = await pagina.locator(info_selector).inner_text()
-        return await extrair_informacoes_tecnicas(informacoes)
-    except Exception as e:
-        logger.error(f"Erro nos dados técnicos: {e}")
-        return {k: "Erro" for k in ["Tipo", "Marca", "Modelo", "Ano", "Situação", "Quilometragem", "Combustível", "Cor"]}
+        logger.error(f"Erro ao formatar preço: {e}")
+        return "Não informado"
 
 async def tentar_extrair_revenda(pagina, config: Config) -> str:
     try:
-        selector = "span.city"
-        el = pagina.locator(selector)
-
-        await el.scroll_into_view_if_needed()
-        await el.wait_for(state="visible", timeout=35000)  # timeout menor evita travar o script
-
-        raw_text = await el.inner_text()
-        revenda_text = raw_text.replace("Cidade:", "").strip().title()
-
-        logger.info(f"🏪 Localização da revenda: {revenda_text}")
+        selector = "div.produtoVendedor span p"  
+        await pagina.wait_for_selector(selector, timeout=30000)
+        texto = await pagina.locator(selector).inner_text()
+        revenda_text = texto.strip().title()
+        logger.info(f" Localização da revenda: {revenda_text}")
         return revenda_text
     except Exception as e:
-        logger.warning(f"Erro na revenda: {e}")
+        logger.warning(f"Erro ao extrair localização: {e}")
         return "Não informado"
 
 async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
@@ -134,7 +106,7 @@ async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
         logger.info(f"{total_botoes} botões 'Ver anúncio' encontrados na página.")
 
         for i in range(min(config.MAX_BOTOES_POR_PAGINA, total_botoes)):
-            logger.info(f"➡️  Processando anúncio {i + 1}/{total_botoes}")
+            logger.info(f"  Processando anúncio {i + 1}/{total_botoes}")
             botao = botoes.nth(i)
 
             try:
@@ -143,28 +115,28 @@ async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
                 await botao.hover()
                 await asyncio.sleep(0.5)
                 await botao.click(timeout=config.TIMEOUT_PADRAO)
-                logger.info(f"✅ Clicou no anúncio {i + 1}")
+                logger.info(f" Clicou no anúncio {i + 1}")
             except Exception as e:
-                logger.warning(f"❌ Falha ao clicar no botão {i + 1}: {e}")
+                logger.warning(f" Falha ao clicar no botão {i + 1}: {e}")
                 continue
 
             try:
                 await pagina.wait_for_load_state("networkidle", timeout=30000)
                 await asyncio.sleep(2.0)
             except PlaywrightTimeoutError:
-                logger.warning(f"⏱️ Timeout ao carregar anúncio {i + 1}, pulando para o próximo.")
+                logger.warning(f" Timeout ao carregar anúncio {i + 1}, pulando para o próximo.")
                 await pagina.go_back(timeout=config.TIMEOUT_PADRAO)
                 await pagina.wait_for_selector('button.button', timeout=config.TIMEOUT_PADRAO)
                 continue
 
             preco = await tentar_extrair_preco(pagina, config)
-            logger.info(f"💰 Preço extraído: {preco}")
+            logger.info(f" Preço extraído: {preco}")
 
             dados_tecnicos = await tentar_extrair_dados_tecnicos(pagina, config)
-            logger.info(f"📄 Dados técnicos extraídos.")
+            logger.info(f" Dados técnicos extraídos.")
 
             revenda = await tentar_extrair_revenda(pagina, config)
-            logger.info(f"🏢 Localização da revenda: {revenda}")
+            logger.info(f" Localização da revenda: {revenda}")
 
             url_anuncio = pagina.url
             dados_coletados.append({
@@ -174,18 +146,18 @@ async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
                 "URL": url_anuncio
             })
 
-            logger.info("🔙 Voltando para listagem de anúncios...")
+            logger.info(" Voltando para listagem de anúncios...")
             try:
                 await pagina.go_back(timeout=config.TIMEOUT_PADRAO)
                 await pagina.wait_for_selector('button.button', timeout=config.TIMEOUT_PADRAO)
                 await asyncio.sleep(1.0)
-                logger.info("↩️ Retornou com sucesso para a listagem")
+                logger.info("↩ Retornou com sucesso para a listagem")
             except Exception as e:
-                logger.error(f"❌ Erro ao retornar para a listagem: {e}")
+                logger.error(f" Erro ao retornar para a listagem: {e}")
                 break
 
     except Exception as e:
-        logger.error(f"❌ Erro geral durante extração: {e}")
+        logger.error(f" Erro geral durante extração: {e}")
     return dados_coletados
 
 async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
@@ -193,7 +165,7 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
     pagina_atual = 1
 
     while pagina_atual <= config.MAX_PAGINAS:
-        logger.info(f"📄 Página {pagina_atual} de {config.MAX_PAGINAS}")
+        logger.info(f" Página {pagina_atual} de {config.MAX_PAGINAS}")
         dados = await extracaoDadosTrucadao(pagina, config)
         todos_dados.extend(dados)
 
@@ -205,15 +177,15 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
             if await proximo_botao.is_enabled():
                 await asyncio.sleep(0.5)
                 await proximo_botao.click()
-                logger.info("🔄 Clique realizado, aguardando próxima página...")
+                logger.info(" Clique realizado, aguardando próxima página...")
                 await pagina.wait_for_selector('button.button', timeout=60000)
                 pagina_atual += 1
-                logger.info(f"➡️ Avançou para a página {pagina_atual}")
+                logger.info(f" Avançou para a página {pagina_atual}")
             else:
-                logger.info("⛔ Botão de próxima página desabilitado.")
+                logger.info(" Botão de próxima página desabilitado.")
                 break
         except Exception as e:
-            logger.warning(f"⚠️ Falha ao mudar de página: {e}")
+            logger.warning(f" Falha ao mudar de página: {e}")
             break
 
     return todos_dados
@@ -221,11 +193,11 @@ async def coletar_dados_trucadao(pagina, config: Config) -> List[Dict]:
 async def iniciar_scraping():
     async with async_playwright() as p:
         try:
-            navegador = await p.chromium.launch(headless=True, slow_mo=100)
+            navegador = await p.chromium.launch(headless=False, slow_mo=100)
             pagina = await navegador.new_page()
             config = Config()
 
-            logger.info(f"🌐 Acessando {config.URL_BASE}")
+            logger.info(f" Acessando {config.URL_BASE}")
             await pagina.goto(config.URL_BASE, timeout=80000)
             await pagina.wait_for_load_state("networkidle")
 
@@ -234,11 +206,11 @@ async def iniciar_scraping():
             if dados:
                 df = pd.DataFrame(dados)
                 df.to_excel(config.OUTPUT_FILE, index=False)
-                logger.info(f"✅ {len(dados)} registros salvos em {config.OUTPUT_FILE}")
+                logger.info(f" {len(dados)} registros salvos em {config.OUTPUT_FILE}")
             else:
-                logger.warning("⚠️ Nenhum dado foi extraído.")
+                logger.warning(" Nenhum dado foi extraído.")
         except Exception as e:
-            logger.critical(f"💥 Erro crítico durante execução: {e}")
+            logger.critical(f" Erro crítico durante execução: {e}")
         finally:
             await navegador.close()
 
