@@ -18,50 +18,70 @@ class Config:
 
 async def tentar_extrair_dados_tecnicos(pagina, config: Config) -> Dict[str, str]:
     campos = {
+        "Tipo": "Não informado",
         "Marca": "Não informado",
         "Modelo": "Não informado",
         "Ano": "Não informado",
         "Combustível": "Não informado",
+        "Placa": "Não informado",
+        "Cor": "Não informado",
         "Quilometragem": "Não informado",
-        "Tipo": "Cavalo Mecânico",
         "Situação": "Não informado"
     }
-
     try:
-        # Lista de campos que vamos procurar
-        labels_procurados = {
-            "Marca": "Marca",
-            "Modelo": "Modelo",
-            "Ano": "Ano",
-            "Combustível": "Combustivel",  
-            "Quilometragem": "Km",
-            "Situação": "Situação"
-        }
+        await pagina.wait_for_selector("div.MuiGrid-container.css-3uuuu9", timeout=5000)
+        linhas = pagina.locator("div.MuiGrid-container.css-3uuuu9 > div.MuiGrid-item")
+        total = await linhas.count()
+        logger.info(f"Encontradas {total} linhas de dados técnicos.")
 
-        # Seleciona todos os pares label + valor
-        blocos = pagina.locator("div.MuiGrid-item")
-        total_blocos = await blocos.count()
-
-        for i in range(total_blocos):
-            bloco = blocos.nth(i)
-            try:
-                await bloco.scroll_into_view_if_needed()
-                await asyncio.sleep(0.3)
+        for i in range(total):
+            bloco = linhas.nth(i)
+            chave = ""
+            valor = ""
+            if await bloco.locator("label").count() > 0:
+                chave = (await bloco.locator("label").inner_text()).strip().lower()
                 
-                label = await bloco.locator("label").inner_text()
-                valor = await bloco.locator("p").inner_text()
+            p_tags = bloco.locator("p")
+            p_count = await p_tags.count()
+            if p_count > 0:
+                valor = (await p_tags.first.inner_text()).strip()
+            else:
+                valor = ""
 
-                for campo, label_site in labels_procurados.items():
-                    if label.strip().lower() == label_site.lower():
-                        campos[campo] = valor.strip()
-            except Exception:
-                continue
+            if chave and valor:
+                logger.info(f"Campo identificado: '{chave}' -> '{valor}'")
+
+            # Mapeia campos conhecidos e adiciona logs
+            if "tipo" in chave:
+                campos["Tipo"] = valor
+                logger.info(f"Tipo capturado: {valor}")
+            elif "marca" in chave:
+                campos["Marca"] = valor
+                logger.info(f"Marca capturada: {valor}")
+            elif "modelo" in chave:
+                campos["Modelo"] = valor
+                logger.info(f"Modelo capturado: {valor}")
+            elif "ano" in chave:
+                campos["Ano"] = valor
+                logger.info(f"Ano capturado: {valor}")
+            elif "combust" in chave:
+                campos["Combustível"] = valor
+                logger.info(f"Combustível capturado: {valor}")
+            elif "placa" in chave:
+                campos["Placa"] = valor
+                logger.info(f"Placa capturada: {valor}")
+            elif "cor" in chave:
+                campos["Cor"] = valor
+                logger.info(f"Cor capturada: {valor}")
+            elif "km" in chave:
+                campos["Quilometragem"] = valor
+                logger.info(f"Quilometragem capturada: {valor}")
+            elif "situação" in chave or "situacao" in chave:
+                campos["Situação"] = valor
+                logger.info(f"Situação capturada: {valor}")
 
     except Exception as e:
-        logger.error(f"Erro ao extrair dados técnicos dinâmicos: {e}", exc_info=True)
-        for campo in campos:
-            if campos[campo] == "Não informado":
-                campos[campo] = "Erro"
+        logger.error(f"Erro ao extrair dados técnicos: {e}", exc_info=True)
 
     return campos
 
@@ -99,6 +119,7 @@ async def tentar_extrair_revenda(pagina, config: Config) -> str:
 
 async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
     dados_coletados = []
+    
     try:
         botoes = pagina.locator('button.button', has_text="Ver anúncio")
         await pagina.wait_for_selector('button.button', timeout=config.TIMEOUT_PADRAO)
@@ -121,7 +142,10 @@ async def extracaoDadosTrucadao(pagina, config: Config) -> List[Dict]:
                 continue
 
             try:
-                await pagina.wait_for_load_state("networkidle", timeout=30000)
+                await pagina.wait_for_load_state("domcontentloaded", timeout=30000)
+                await pagina.wait_for_selector("text=Info. Técnicas", timeout=30000)
+                
+                await pagina.mouse.wheel(0, 600)
                 await asyncio.sleep(2.0)
             except PlaywrightTimeoutError:
                 logger.warning(f" Timeout ao carregar anúncio {i + 1}, pulando para o próximo.")
