@@ -255,7 +255,7 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, func_extracao, site):
 
         return todos_os_dados
 
-url_caminhoes = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=CAVALO%2520MEC%25C3%2582NICO&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
+url_caminhoes = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=IMPLEMENTOS&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
 xpath_caminhoes = "//app-truck-card/a/a"
 seletor_proxima_pagina_caminhoes = "button.p-paginator-next.p-paginator-element.p-link.p-ripple"
 
