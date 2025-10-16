@@ -11,13 +11,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PAGE_URLS = [
-f"https://www.trucadao.com.br/venda/implementos?subcategoria=rodoviario&page={i}"
-for i in range(1, 2)
+f"https://www.trucadao.com.br/venda/caminhoes-usados?tipo=cavalo-mecanico&page={i}"
+for i in range(1, 27)
 ]
 
-ARQUIVO_PKL_DADOS = "Implementos.pkl"
-ARQUIVO_EXCEL_DADOS = "Implementos.xlsx"
-ARQUIVO_CHECKPOINT = "checkpoint_trucadao.pkl" 
+ARQUIVO_PKL_DADOS = "CaminhoesTruncadao.pkl"
+ARQUIVO_EXCEL_DADOS = "Links_Truncadao.xlsx"
+ARQUIVO_CHECKPOINT = "checkpoint_CaminhoesTruncadao.pkl" 
 ARQUIVO_LINKS_CACHE = "links_trucadao.pkl"
 
 TIMEOUT = 30000
