@@ -47,85 +47,64 @@ def normalize_km(s):
     return (m2.group(1).replace('.','') + " km") if m2 else s
 
 SEL = {
-    # lista de cards
+    # LISTA DE CARDS (mais robusto)
     "card": [
-        # seus seletores (prioridade)
-        "css=body > app-root > div > app-list-advertisements > app-page-list-ads > main > div > div > div > div.list-content > div.cards > app-truck-card",
-        "xpath=/html/body/app-root/div/app-list-advertisements/app-page-list-ads/main/div/div/div/div[2]/div[2]/app-truck-card",
-        # fallbacks genéricos
-        "css=div.list-content div.cards app-truck-card",
+        "xpath=//div[contains(@class,'cards')]//app-truck-card",
+        "css=div.cards app-truck-card",
         "css=app-truck-card"
     ],
 
-    # Marca + Modelo (título no h2 de section[1])
+    # Marca + Modelo (seu /section[1]/h2)
     "marca_modelo": [
-        "css=:scope a > section:nth-of-type(1) > h2",
-        "xpath=.//a/section[1]/h2",
-        # fallbacks antigos
-        "css=:scope div > a > div > div > h2",
-        "xpath=.//div/a/div/div/h2"
+        "xpath=.//a[contains(@class,'card-link-container')]/section[1]/h2",
+        "css=:scope a.card-link-container section:nth-of-type(1) h2",
+        ":scope h2"  # fallback
     ],
 
-    # Preço (h4 de section[1])
+    # Preço (seu /section[1]/h4)
     "preco": [
-        "css=:scope a > section:nth-of-type(1) > h4",
-        "xpath=.//a/section[1]/h4",
-        # fallbacks
-        "css=:scope div > a > div > div > h4",
-        "xpath=.//div/a/div/div/h4",
-        "xpath=.//*[contains(normalize-space(.), 'R$')]"
+        "xpath=.//a[contains(@class,'card-link-container')]/section[1]/h4",
+        "css=:scope a.card-link-container section:nth-of-type(1) h4",
+        "xpath=.//*[contains(normalize-space(.),'R$')]"  # fallback genérico
     ],
 
-    # Km (primeiro "row-item" dentro de section[1])
+    # Km (seu /section[1]/div/div[1]/span)
     "km": [
-        "css=:scope a > section:nth-of-type(1) div.row-item-adv > div:nth-child(1) > span",
-        "xpath=.//a/section[1]/div/div[1]/span",
-        # fallbacks antigos
-        "css=:scope div > a > div > div > div > div.row-item-adv > div:nth-child(1)",
-        "xpath=.//div/a/div/div/div/div[contains(@class,'row-item-adv')]/div[1]"
+        "xpath=.//a[contains(@class,'card-link-container')]/section[1]/div/div[1]/span",
+        "css=:scope a.card-link-container section:nth-of-type(1) .row-item-adv > div:nth-child(1) span",
+        "xpath=.//*[contains(translate(normalize-space(.),'KMkm','KMKM'),'KM')]"  # fallback
     ],
 
-    # Ano (segundo "row-item" dentro de section[1])
+    # Ano (seu /section[1]/div/div[2]/span)
     "ano": [
-        "css=:scope a > section:nth-of-type(1) div.row-item-adv > div:nth-child(2) > span",
-        "xpath=.//a/section[1]/div/div[2]/span",
-        # fallbacks antigos
-        "css=:scope div > a > div > div > div > div.row-item-adv > div:nth-child(2)",
-        "xpath=.//div/a/div/div/div/div[contains(@class,'row-item-adv')]/div[2]"
+        "xpath=.//a[contains(@class,'card-link-container')]/section[1]/div/div[2]/span",
+        "css=:scope a.card-link-container section:nth-of-type(1) .row-item-adv > div:nth-child(2) span"
     ],
 
-    # Anunciante (se existir no bloco inferior)
+    # Anunciante (você mostrou /section[1]/div/div[3]/span)
     "anunciante": [
-        "css=:scope a > section:nth-of-type(2) .item-adv.ng-star-inserted > span",
-        "xpath=.//a/section[2]//div[contains(@class,'item-adv')]/span",
-        # fallbacks antigos
-        "css=:scope div > a > div > div > div > div.item-adv.ng-star-inserted > span",
-        "xpath=.//div/a/div/div/div/div[contains(@class,'item-adv')]/span"
+        "xpath=.//a[contains(@class,'card-link-container')]/section[1]/div/div[3]/span",
+        # fallback antigo (alguns cards exibem em section[2])
+        "xpath=.//a[contains(@class,'card-link-container')]/section[2]//div[contains(@class,'item-adv')]//span",
+        "css=:scope .item-adv span"
     ],
 
-    # Localização (primeiro span de section[2])
+    # Local (seu /section[2]/div[1]/span)
     "local": [
-        "css=:scope a > section:nth-of-type(2) > div:nth-child(1) > span",
-        "xpath=.//a/section[2]/div[1]/span",
-        # fallbacks antigos
-        "css=:scope div > a > div > div > div > div:nth-child(3) > span",
-        "xpath=.//div/a/div/div/div/div[3]/span"
+        "xpath=.//a[contains(@class,'card-link-container')]/section[2]/div[1]/span",
+        "css=:scope a.card-link-container section:nth-of-type(2) > div:nth-child(1) > span"
     ],
 
-    # Próxima página
+    # Próxima página (PrimeNG)
     "next_btn": [
-        "css=body > app-root > div > app-list-advertisements > app-page-list-ads > main > div > div > div > div.list-content > div.wrap-pagination.ng-star-inserted > div > p-paginator > div > button.p-paginator-next.p-paginator-element.p-link.p-ripple",
-        "xpath=/html/body/app-root/div/app-list-advertisements/app-page-list-ads/main/div/div/div/div[2]/div[3]/div/p-paginator/div/button[3]",
-        # fallbacks
-        "css=button.p-paginator-next.p-paginator-element.p-link.p-ripple",
-        "css=button.p-paginator-next",
-        "xpath=//button[contains(@class,'p-paginator-next')]",
-        "css=li.p-paginator-next button, li.p-paginator-next a"
+        "css=button.p-paginator-next:not(.p-disabled)",
+        "css=li.p-paginator-next button:not(.p-disabled), li.p-paginator-next a:not(.p-disabled)",
+        "xpath=//button[contains(@class,'p-paginator-next') and not(contains(@class,'p-disabled'))]"
     ]
 }
 
 SCROLL_STEPS = 3
-HEADLESS = True
+HEADLESS = False
 
 def extrair_card(card):
     # garantir que o card esteja visível no viewport
