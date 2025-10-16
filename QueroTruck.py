@@ -3,7 +3,7 @@ import re, time, random, pandas as pd
 
 NBSP = "\xa0"
 
-URL_QUEROTRUCK = "https://querotruck.com.br/anuncios/pesquisa-veiculos?sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
+URL_QUEROTRUCK = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=CAVALO%2520MEC%25C3%2582NICO&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
 
 def jitter(a=0.5, b=1.2): time.sleep(random.uniform(a,b))
 
