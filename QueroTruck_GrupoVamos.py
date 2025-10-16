@@ -255,22 +255,9 @@ def coletar_dados(url, xpath, seletor_proxima_pagina, func_extracao, site):
 
         return todos_os_dados
 
-url_caminhoes = "https://querotruck.com.br/anuncios/pesquisa-veiculos?categoria=IMPLEMENTOS&sortType=asc&sortField=OrderedAt&pageSize=40&pageIndex=1"
-xpath_caminhoes = "//app-truck-card/a/a"
-seletor_proxima_pagina_caminhoes = "button.p-paginator-next.p-paginator-element.p-link.p-ripple"
-
 url_seminovos = "https://vamos.com.br/seminovos/cavalo-mecanico"
 xpath_seminovos = "//app-offer-card"
 seletor_proxima_pagina_seminovos = 'xpath=//*[@id="paginador"]/pagination-template/nav/ul/li[13]/a'
-
-# Quero Truck
-dados_caminhoes = coletar_dados(
-    url_caminhoes,
-    xpath_caminhoes,
-    seletor_proxima_pagina_caminhoes,
-    func_extracao=extracaoDadosQueroTrck,
-    site="querotruck"
-)
 
 # Grupo Vamos
 dados_seminovos = coletar_dados(
@@ -281,11 +268,9 @@ dados_seminovos = coletar_dados(
     site="grupovamos"
 )
 
-df_caminhoes = pd.DataFrame(dados_caminhoes)
 df_seminovos = pd.DataFrame(dados_seminovos)
 
 with pd.ExcelWriter('dados_Truck&Vamos.xlsx') as writer:
-    df_caminhoes.to_excel(writer, sheet_name='QueroTruck', index=False)
     df_seminovos.to_excel(writer, sheet_name='GrupoVamos', index=False)
 
 print("Dados exportados para 'dados_Truck&Vamos.xlsx' com abas separadas")
