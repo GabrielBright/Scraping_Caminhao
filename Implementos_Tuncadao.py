@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 PAGE_URLS = [
 f"https://www.trucadao.com.br/venda/implementos?subcategoria=rodoviario&page={i}"
-for i in range(1, 40)
+for i in range(1, 41)
 ]
 
 ARQUIVO_PKL_DADOS = "Implementos.pkl"
