@@ -270,7 +270,7 @@ dados_seminovos = coletar_dados(
 
 df_seminovos = pd.DataFrame(dados_seminovos)
 
-with pd.ExcelWriter('dados_Truck&Vamos.xlsx') as writer:
+with pd.ExcelWriter('dados_Vamos.xlsx') as writer:
     df_seminovos.to_excel(writer, sheet_name='GrupoVamos', index=False)
 
-print("Dados exportados para 'dados_Truck&Vamos.xlsx' com abas separadas")
+print("Dados exportados para 'dados_Vamos.xlsx' com abas separadas")
