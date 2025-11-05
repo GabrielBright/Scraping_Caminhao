@@ -20,7 +20,7 @@ ARQUIVO_EXCEL_DADOS = "Links_Truncadao.xlsx"
 ARQUIVO_CHECKPOINT = "checkpoint_CaminhoesTruncadao.pkl" 
 ARQUIVO_LINKS_CACHE = "links_trucadao.pkl"
 
-TIMEOUT = 30000
+TIMEOUT = 60000
 MAX_BOTOES_POR_PAGINA = 9999 
 ANCHOR_DETALHE = "div.produtoVendedor" 
 DETAIL_SELECTOR = ANCHOR_DETALHE
